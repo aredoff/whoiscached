@@ -1,6 +1,6 @@
 [Unit]
 Description=WHOIS caching server (whoiscache)
-Documentation=https://github.com/whoiscache/whoiscache
+Documentation=https://github.com/aredoff/whoiscached
 After=network-online.target
 Wants=network-online.target
 

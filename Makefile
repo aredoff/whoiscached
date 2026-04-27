@@ -3,7 +3,7 @@
 GOLANGCI_LINT_VERSION ?= v2.10.1
 
 build:
-	go build -o bin/whoiscached ./cmd/whoiscached
+	CGO_ENABLED=0 go build -trimpath -o bin/whoiscached ./cmd/whoiscached
 
 test:
 	go test -count=1 ./...
