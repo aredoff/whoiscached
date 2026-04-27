@@ -42,6 +42,8 @@ Omit the `grep ... | sha256sum -c` line if you skip verification. Remove downloa
    sudo chown root:whoiscache /etc/whoiscache/config.ini
    ```
 
+   The snapshot file does **not** exist until the first time the store flushes to disk: after there is something to save (cached queries) and `snapshot_interval` elapses, or when the service stops. A missing file right after install is expected.
+
 4. Install and enable the unit:
 
    ```bash
@@ -55,3 +57,7 @@ Omit the `grep ... | sha256sum -c` line if you skip verification. Remove downloa
    ```bash
    sudo -u whoiscache /usr/bin/whoiscached -config /etc/whoiscache/config.ini -dump-keys
    ```
+
+`listen tcp :43: permission denied` happens because **ports below 1024** need `CAP_NET_BIND_SERVICE`. The shipped `whoiscached.service` sets `AmbientCapabilities=CAP_NET_BIND_SERVICE` so the daemon can listen on `:43` as `whoiscache`. Copy the updated unit, then `systemctl daemon-reload` and **`systemctl restart whoiscached`**.
+
+To run the **server** manually as `whoiscache` (e.g. `sudo -u whoiscache /usr/bin/whoiscached ...`) without systemd, run once: **`sudo setcap 'cap_net_bind_service=+ep' /usr/bin/whoiscached`**, or set `[server] listen_addr` in `config.ini` to a high port (e.g. `:4343`) for ad hoc tests.

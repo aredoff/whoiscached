@@ -39,9 +39,9 @@ func NewDiskStore(snapshotPath string, snapshotInterval time.Duration) (*DiskSto
 			continue
 		}
 		s.records[row.Key] = &Record{
-			Body:       row.Body,
+			Body:       compressStored(row.Body),
 			ValidUntil: row.ValidUntil,
-			StaleBody:  row.StaleBody,
+			StaleBody:  compressStored(row.StaleBody),
 			StaleUntil: row.StaleUntil,
 		}
 	}
@@ -88,7 +88,11 @@ func (s *DiskStore) Get(ctx context.Context, key string) (string, error) {
 	if rec == nil || !rec.primaryOK(now) {
 		return "", ErrNotFound
 	}
-	return string(rec.Body), nil
+	out, err := decompressStored(rec.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
 }
 
 func (s *DiskStore) GetStale(ctx context.Context, key string) (string, error) {
@@ -101,7 +105,11 @@ func (s *DiskStore) GetStale(ctx context.Context, key string) (string, error) {
 	if rec == nil || !rec.staleOK(now) {
 		return "", ErrNotFound
 	}
-	return string(rec.StaleBody), nil
+	out, err := decompressStored(rec.StaleBody)
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
 }
 
 func (s *DiskStore) LookupIPPrimary(ctx context.Context, ip net.IP) (string, error) {
@@ -118,7 +126,11 @@ func (s *DiskStore) LookupIPPrimary(ctx context.Context, ip net.IP) (string, err
 	if rec == nil || !rec.primaryOK(now) {
 		return "", ErrNotFound
 	}
-	return string(rec.Body), nil
+	out, err := decompressStored(rec.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
 }
 
 func (s *DiskStore) LookupIPStale(ctx context.Context, ip net.IP) (string, error) {
@@ -135,7 +147,11 @@ func (s *DiskStore) LookupIPStale(ctx context.Context, ip net.IP) (string, error
 	if rec == nil || !rec.staleOK(now) {
 		return "", ErrNotFound
 	}
-	return string(rec.StaleBody), nil
+	out, err := decompressStored(rec.StaleBody)
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
 }
 
 func (s *DiskStore) Put(ctx context.Context, key, val string, ttlPrimary, ttlStale time.Duration) error {
@@ -143,10 +159,11 @@ func (s *DiskStore) Put(ctx context.Context, key, val string, ttlPrimary, ttlSta
 	now := time.Now()
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	p := []byte(val)
 	rec := &Record{
-		Body:       []byte(val),
+		Body:       compressStored(p),
 		ValidUntil: now.Add(ttlPrimary),
-		StaleBody:  []byte(val),
+		StaleBody:  compressStored(p),
 		StaleUntil: now.Add(ttlStale),
 	}
 	s.records[key] = rec

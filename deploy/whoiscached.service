@@ -13,7 +13,8 @@ ExecStart=/usr/bin/whoiscached -config /etc/whoiscache/config.ini
 Restart=on-failure
 RestartSec=5
 
-# Allow writing snapshot under WorkingDirectory
+# Privileged port (e.g. :43) with User= — requires this capability
+AmbientCapabilities=CAP_NET_BIND_SERVICE
 ReadWritePaths=/var/lib/whoiscache
 
 NoNewPrivileges=true

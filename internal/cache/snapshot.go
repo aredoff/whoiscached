@@ -13,7 +13,7 @@ import (
 
 var snapMagic = []byte("WHOISNP1")
 
-const snapVersion uint32 = 1
+const snapVersion uint32 = 2
 
 type snapRow struct {
 	Key        string
@@ -54,7 +54,7 @@ func decodeSnapshot(b []byte) ([]snapRow, error) {
 	off += 8
 	out := make([]snapRow, 0, n)
 	now := time.Now()
-	for i := 0; i < n; i++ {
+	for range n {
 		if len(b) < off+4 {
 			return nil, errors.New("snapshot: truncated record")
 		}
@@ -83,6 +83,14 @@ func decodeSnapshot(b []byte) ([]snapRow, error) {
 		}
 		stale := append([]byte(nil), b[off:off+sl]...)
 		off += sl
+		bodyPlain, err := decompressStored(body)
+		if err != nil {
+			return nil, fmt.Errorf("snapshot: body: %w", err)
+		}
+		stalePlain, err := decompressStored(stale)
+		if err != nil {
+			return nil, fmt.Errorf("snapshot: stale: %w", err)
+		}
 		validUntil := time.Unix(0, vu)
 		staleUntil := time.Unix(0, su)
 		if now.After(validUntil) && now.After(staleUntil) {
@@ -90,9 +98,9 @@ func decodeSnapshot(b []byte) ([]snapRow, error) {
 		}
 		out = append(out, snapRow{
 			Key:        key,
-			Body:       body,
+			Body:       bodyPlain,
 			ValidUntil: validUntil,
-			StaleBody:  stale,
+			StaleBody:  stalePlain,
 			StaleUntil: staleUntil,
 		})
 	}
@@ -140,6 +148,16 @@ func WriteSnapshotFile(path string, rows []snapRow) error {
 	return nil
 }
 
+func onDiskForm(plainOrStored []byte) []byte {
+	if len(plainOrStored) == 0 {
+		return nil
+	}
+	if isGzip(plainOrStored) {
+		return plainOrStored
+	}
+	return compressStored(plainOrStored)
+}
+
 func encodeSnapshot(w io.Writer, rows []snapRow) error {
 	if _, err := w.Write(snapMagic); err != nil {
 		return err
@@ -157,6 +175,8 @@ func encodeSnapshot(w io.Writer, rows []snapRow) error {
 	var buf [4]byte
 	var ts [8]byte
 	for _, row := range rows {
+		body := onDiskForm(row.Body)
+		st := onDiskForm(row.StaleBody)
 		k := []byte(row.Key)
 		binary.LittleEndian.PutUint32(buf[:], uint32(len(k)))
 		if _, err := w.Write(buf[:]); err != nil {
@@ -169,22 +189,22 @@ func encodeSnapshot(w io.Writer, rows []snapRow) error {
 		if _, err := w.Write(ts[:]); err != nil {
 			return err
 		}
-		binary.LittleEndian.PutUint32(buf[:], uint32(len(row.Body)))
+		binary.LittleEndian.PutUint32(buf[:], uint32(len(body)))
 		if _, err := w.Write(buf[:]); err != nil {
 			return err
 		}
-		if _, err := w.Write(row.Body); err != nil {
+		if _, err := w.Write(body); err != nil {
 			return err
 		}
 		binary.LittleEndian.PutUint64(ts[:], uint64(row.StaleUntil.UnixNano()))
 		if _, err := w.Write(ts[:]); err != nil {
 			return err
 		}
-		binary.LittleEndian.PutUint32(buf[:], uint32(len(row.StaleBody)))
+		binary.LittleEndian.PutUint32(buf[:], uint32(len(st)))
 		if _, err := w.Write(buf[:]); err != nil {
 			return err
 		}
-		if _, err := w.Write(row.StaleBody); err != nil {
+		if _, err := w.Write(st); err != nil {
 			return err
 		}
 	}
