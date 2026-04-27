@@ -1,0 +1,23 @@
+[Unit]
+Description=WHOIS caching server (whoiscache)
+Documentation=https://github.com/whoiscache/whoiscache
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=whoiscache
+Group=whoiscache
+WorkingDirectory=/var/lib/whoiscache
+ExecStart=/usr/bin/whoiscached -config /etc/whoiscache/config.ini
+Restart=on-failure
+RestartSec=5
+
+# Allow writing snapshot under WorkingDirectory
+ReadWritePaths=/var/lib/whoiscache
+
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,43 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build and package
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          SHORT_SHA=$(printf '%s' "$GITHUB_SHA" | cut -c1-7)
+          BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          LDFLAGS="-s -w -X 'github.com/whoiscache/whoiscache/internal/version.Version=${VERSION}' -X 'github.com/whoiscache/whoiscache/internal/version.Commit=${SHORT_SHA}' -X 'github.com/whoiscache/whoiscache/internal/version.BuildTime=${BUILD_TIME}'"
+          mkdir -p dist
+          for arch in amd64 arm64; do
+            bin="whoiscached-${VERSION}-linux-${arch}"
+            GOOS=linux GOARCH=$arch go build -trimpath -ldflags="${LDFLAGS}" -o "dist/${bin}" ./cmd/whoiscached
+            (cd dist && tar -czf "${bin}.tar.gz" "${bin}")
+            rm "dist/${bin}"
+          done
+          (cd dist && sha256sum *.tar.gz > "whoiscached-${VERSION}_checksums.txt")
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            dist/*.tar.gz
+            dist/*_checksums.txt
