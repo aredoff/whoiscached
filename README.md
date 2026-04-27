@@ -27,7 +27,7 @@ The directory for `snapshot_path` is created on first write.
 
 ## Configuration
 
-See [configs/config.ini.example](configs/config.ini.example).
+See [deploy/config.ini.example](deploy/config.ini.example).
 
 | Section   | Purpose                                                   |
 | --------- | --------------------------------------------------------- |
