@@ -39,7 +39,7 @@ func (idx *ipIndex) rebuildFromKeys(keys []string, getRecord func(key string) *R
 	sort.Slice(idx.v6, func(i, j int) bool { return idx.v6[i].bits > idx.v6[j].bits })
 }
 
-func parseRecordIPCIDR(key string) (ipnet *net.IPNet, bits int, is4 bool, ok bool) {
+func parseRecordIPCIDR(key string) (ipnet *net.IPNet, bits int, is4, ok bool) {
 	switch {
 	case strings.HasPrefix(key, "4:"):
 		_, n, err := net.ParseCIDR(key[2:])

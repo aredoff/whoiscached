@@ -1,48 +1,48 @@
 # whoiscache
 
-Кеширующий WHOIS-сервер (TCP, строка запроса + `\n`). Ответы хранятся **в памяти** с периодическим **снимком на диск** (`[storage]`). Апстрим — рефералы от IANA; для ASN — fallback из конфига.
+A caching WHOIS server (TCP, query line + `\n`). Responses are kept **in memory** with a periodic **on-disk snapshot** (`[storage]`). Upstream follows IANA referrals; for ASN, fallback comes from the config.
 
-## Возможности
+## Features
 
-- **Домен / ASN / IP**: ключи `d:`, `a:`, `4:`/`6:` + нормализованное значение. Для IP после ответа сохраняется **один** CIDR из WHOIS; поиск — **LPM** (самый специфичный префикс).
-- **Stale**: в каждой записи два слоя TTL; при ошибке апстрима отдаётся stale, пока не истёк `stale_ttl`.
-- **Снимок**: пишется только при **dirty**; атомарно (`tmp` + `rename`). При старте загружается с диска.
-- **CLI**: `-dump-keys` — ключи из снимка; `-get-key=<RecordKey>` — primary из снимка; `-delete-key=<RecordKey>` — удалить запись и обновить снимок (открывает DiskStore, `Close` пишет файл).
-- **Метрики**: `GET /metrics`.
+- **Domain / ASN / IP**: keys `d:`, `a:`, `4:`/`6:` plus a normalized value. For IP, **one** CIDR from the WHOIS response is stored; lookup is **LPM** (most specific prefix).
+- **Stale**: two TTL layers per record; on upstream failure stale is served until `stale_ttl` expires.
+- **Snapshot**: written only when **dirty**; atomically (`tmp` + `rename`). Loaded from disk on startup.
+- **CLI**: `-dump-keys` — keys from the snapshot; `-get-key=<RecordKey>` — primary from the snapshot; `-delete-key=<RecordKey>` — remove the record and update the snapshot (opens DiskStore, `Close` writes the file).
+- **Metrics**: `GET /metrics`.
 
-## Требования
+## Requirements
 
-- Go 1.23+ (см. `go.mod`)
+- Go 1.23+ (see `go.mod`)
 
-## Запуск
+## Run
 
 ```bash
 export WHOISCACHE_CONFIG=configs/config.ini
 go run ./cmd/whoiscached -config configs/config.ini
 ```
 
-Каталог для `snapshot_path` создаётся при первой записи.
+The directory for `snapshot_path` is created on first write.
 
-**systemd:** [deploy/whoiscached.service](deploy/whoiscached.service) и шаги в [deploy/README.md](deploy/README.md).
+**systemd:** [deploy/whoiscached.service](deploy/whoiscached.service) and steps in [deploy/README.md](deploy/README.md).
 
-## Конфигурация
+## Configuration
 
-См. [configs/config.ini.example](configs/config.ini.example).
+See [configs/config.ini.example](configs/config.ini.example).
 
-| Секция | Назначение |
-|--------|------------|
-| `[server]` | WHOIS TCP, таймауты, `max_conns`, `worker_pool_size`. |
-| `[metrics]` | HTTP для `/metrics`. |
-| `[storage]` | `snapshot_path`, `snapshot_interval`. |
-| `[cache]` | TTL домена/IP/ASN, `negative_ttl`, `stale_ttl`. |
-| `[whois]` | Апстрим, лимиты, `iana_referral` для IP/ASN. |
+| Section   | Purpose                                                   |
+| --------- | --------------------------------------------------------- |
+| `[server]`  | WHOIS TCP, timeouts, `max_conns`, `worker_pool_size`.   |
+| `[metrics]` | HTTP for `/metrics`.                                   |
+| `[storage]` | `snapshot_path`, `snapshot_interval`.                  |
+| `[cache]`   | Domain/IP/ASN TTL, `negative_ttl`, `stale_ttl`.         |
+| `[whois]`   | Upstream, limits, `iana_referral` for IP/ASN.          |
 
-## Метрики
+## Metrics
 
 - `whoiscache_requests_total{kind,result}`
 - `whoiscache_errors_total{stage}`
 - `whoiscache_request_duration_seconds{kind}`
 
-## Ограничения
+## Limitations
 
-- Для IP/ASN в конфиге поддержан только `iana_referral`.
+- For IP/ASN, only `iana_referral` is supported in the config.

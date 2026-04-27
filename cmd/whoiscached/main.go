@@ -101,7 +101,9 @@ func runSnapshotCLI(cfg *config.Config, dumpKeys bool, getKey string) error {
 		return nil
 	}
 	if b, ok := cache.SnapGetPrimary(rows, getKey); ok {
-		os.Stdout.Write(b)
+		if _, err := os.Stdout.Write(b); err != nil {
+			return err
+		}
 		if len(b) > 0 && b[len(b)-1] != '\n' {
 			fmt.Println()
 		}

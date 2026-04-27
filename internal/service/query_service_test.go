@@ -18,9 +18,11 @@ func (stubBackend) GetStale(context.Context, string) (string, error) { return ""
 func (stubBackend) Put(context.Context, string, string, time.Duration, time.Duration) error {
 	return nil
 }
+
 func (stubBackend) LookupIPPrimary(context.Context, net.IP) (string, error) {
 	return "", cache.ErrNotFound
 }
+
 func (stubBackend) LookupIPStale(context.Context, net.IP) (string, error) {
 	return "", cache.ErrNotFound
 }

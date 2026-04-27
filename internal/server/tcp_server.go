@@ -97,7 +97,7 @@ func (s *TCPServer) Serve(ctx context.Context) error {
 }
 
 func (s *TCPServer) handle(_ context.Context, c net.Conn) {
-	defer c.Close()
+	defer func() { _ = c.Close() }()
 	_ = c.SetReadDeadline(time.Now().Add(s.cfg.Server.ReadTimeout))
 	_ = c.SetWriteDeadline(time.Now().Add(s.cfg.Server.WriteTimeout))
 

@@ -18,7 +18,7 @@ listen_addr = :8080
 ; Local snapshot file (atomic replace). Dirty RAM is flushed on interval or Close.
 ; CLI: -dump-keys, -get-key=KEY, -delete-key=KEY (same -config / WHOISCACHE_CONFIG).
 [storage]
-snapshot_path = data/whoiscache.snap
+snapshot_path = /var/lib/whoiscache/whoiscache.snap
 snapshot_interval = 1m
 
 ; TTLs for cache entries (Go duration syntax)

@@ -2,12 +2,11 @@ package cache
 
 import (
 	"context"
+	"net"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
-
-	"net"
 )
 
 func TestDiskStore_LPM_PrefersMoreSpecific(t *testing.T) {

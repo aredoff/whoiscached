@@ -108,7 +108,7 @@ func (s *QueryService) lookupDomain(ctx context.Context, d string) ([]byte, erro
 	if err != nil {
 		return nil, err
 	}
-	return out.([]byte), nil
+	return assertBytesResult(out)
 }
 
 func (s *QueryService) lookupIP(ctx context.Context, ipstr string) ([]byte, error) {
@@ -150,7 +150,7 @@ func (s *QueryService) lookupIP(ctx context.Context, ipstr string) ([]byte, erro
 	if err != nil {
 		return nil, err
 	}
-	return out.([]byte), nil
+	return assertBytesResult(out)
 }
 
 func (s *QueryService) lookupASN(ctx context.Context, asnRaw string) ([]byte, error) {
@@ -185,7 +185,15 @@ func (s *QueryService) lookupASN(ctx context.Context, asnRaw string) ([]byte, er
 	if err != nil {
 		return nil, err
 	}
-	return out.([]byte), nil
+	return assertBytesResult(out)
+}
+
+func assertBytesResult(out any) ([]byte, error) {
+	b, ok := out.([]byte)
+	if !ok {
+		return nil, fmt.Errorf("unexpected singleflight result type %T", out)
+	}
+	return b, nil
 }
 
 func (s *QueryService) getCached(ctx context.Context, key string) ([]byte, bool) {
